@@ -8,6 +8,18 @@ public class DemoUE5FSM : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"AIModule",
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"EnhancedInput" ,
+				"GameplayTags",
+				"InputCore",
+				"UE5Coro",
+				"UE5CoroAI",
+				"UE5FSM",
+			});
 	}
 }
