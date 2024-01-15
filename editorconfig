@@ -1,0 +1,11 @@
+root = true
+[*]
+
+# Put CR and LF at the end of a line
+end_of_line = lf
+
+# Remove trailing whitespaces
+trim_trailing_whitespace = false
+
+# Put a final newline at the end of a file
+insert_final_newline = true

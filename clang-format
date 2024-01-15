@@ -1,0 +1,122 @@
+Language: Cpp
+BasedOnStyle: LLVM
+
+# Mark Unreal Engine macros as complete statements, e.g. they don't require a semicolon after them
+StatementMacros: ['UPROPERTY', 'UFUNCTION', 'UCLASS', 'USTRUCT', 'UENUM', 'UINTERFACE', 'GENERATED_BODY']
+
+# Keep access modifiers (public, private) at the very beginning of the line
+AccessModifierOffset: -4
+
+# Don't align parameters if a function call is split into several lines
+AlignAfterOpenBracket: DontAlign
+
+# Align all macro newlines (backslash sign) as close as possible
+AlignEscapedNewlines: Left
+
+# Avoid aligning operands
+AlignOperands: DontAlign
+
+# Avoid aligning any comments, leave it to the developer
+AlignTrailingComments: leave
+
+# If a block is empty, allow it to be on a single line
+AllowShortBlocksOnASingleLine: Empty
+
+# Put each enum value on a line
+AllowShortEnumsOnASingleLine: false
+
+# Make functions of any size to be distinct
+AllowShortFunctionsOnASingleLine: false
+
+# Allow one or less instruction long lambdas to be oneliners
+AllowShortLambdasOnASingleLine: All
+
+# Define all situations for braces
+BraceWrapping:
+
+    # If a case label in a switch has braces, put them on a separate lines
+    AfterCaseLabel: true 
+    
+    # Put class braces on separate lines
+    AfterClass: true
+    
+    # Put if braces on separate lines
+    AfterControlStatement: true
+    
+    # Put enum braces on separate lines
+    AfterEnum: true
+    
+    # Put function braces on separate lines
+    AfterFunction: true
+    
+    # Put namespace braces on separate lines
+    AfterNamespace: true
+    
+    # Put struct braces on separate lines
+    AfterStruct: true
+    
+    # Put union braces on separate lines
+    AfterUnion: true
+    
+    # Put else braces on separate lines
+    BeforeElse: true
+    
+    # Put lambda braces on separate lines
+    BeforeLambdaBody: true
+    
+    # Put while loop braces on separate lines
+    BeforeWhile: true
+    
+    # Don't indent braces
+    IndentBraces: false
+    
+# Use braces setup described above
+BreakBeforeBraces: Custom
+
+# Write inheritance list on a separate line with its sign (column or comma) before it
+BreakInheritanceList: BeforeComma
+
+# Write constructor initializer list on a separate line with its sign (column or comma) before it
+BreakConstructorInitializers: BeforeComma
+
+# Don't break string literals automatically
+BreakStringLiterals: false
+
+# Put spaces in C++11 initialization lists
+Cpp11BracedListStyle: false
+
+# Put an empty line before access modifier (public, private) if it's not a comment
+EmptyLineBeforeAccessModifier: LogicalBlock
+
+# Keep one single indent in a switch case block
+IndentCaseBlocks: false
+
+# Indent switch case labels
+IndentCaseLabels: true
+
+# Indent preprocessor directives with their relative hashes
+IndentPPDirectives: BeforeHash
+
+# Indent inside a namespace
+NamespaceIndentation: All
+
+# Put a ptr/ref sign on left-hand side
+PointerAlignment: Left
+
+# Sort includes
+SortIncludes: true
+
+# Don't put a space before a switch case colon
+SpaceBeforeCaseColon: false
+
+# Use tab for tabulation
+UseTab: Always
+
+# Use 4 character for a tab character
+TabWidth: 4
+
+# Use 4 character for to indent
+IndentWidth: 4
+
+# A line can be up to 120 characters long
+ColumnLimit: 120
