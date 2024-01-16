@@ -98,6 +98,7 @@ protected:
 	//~UDemo_BossState Interface
 	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
 	virtual void OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
+	virtual FString GetDebugData() const override;
 	//~End of UDemo_BossState Interface
 
 	//~Labels
@@ -123,6 +124,10 @@ protected:
 
 private:
 	FTimerHandle SeekingTransitionTimer;
+
+	TWeakObjectPtr<AActor> MovePoint = nullptr;
+	float WaitTime = 0.f;
+	float WaitStartTime = 0.f;
 };
 
 UCLASS()

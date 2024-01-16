@@ -218,23 +218,57 @@ void UDemo_BossState_Patrolling::OnActivated(EStateAction StateAction, TSubclass
 
 void UDemo_BossState_Patrolling::OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState)
 {
+	MovePoint.Reset();
+	WaitTime = WaitStartTime = 0.f;
+
 	GlobalStateData->bIsInvincible = false;
 	GetTimerManager().ClearTimer(SeekingTransitionTimer);
 
 	Super::OnDeactivated(StateAction, NewState);
 }
 
+FString UDemo_BossState_Patrolling::GetDebugData() const
+{
+	FString ReturnValue;
+
+	const float RemainingSeekingTransitionTime = GetTimerManager().GetTimerRemaining(SeekingTransitionTimer);
+	if (RemainingSeekingTransitionTime > 0.f)
+	{
+		ReturnValue.Appendf(TEXT("\t- Remaining seeking transition time (%.2fs)\n"), RemainingSeekingTransitionTime);
+	}
+
+	if (MovePoint.IsValid())
+	{
+		ReturnValue.Appendf(TEXT("\t- Move point (%s)\n"), *MovePoint->GetName());
+	}
+
+	const float RemainingWaitTime = WaitTime - TimeSince(WaitStartTime);
+	if (RemainingWaitTime > 0.f)
+	{
+		ReturnValue.Appendf(TEXT("\t- Remaining wait time (%.2fs)\n"), RemainingWaitTime);
+	}
+
+	if (!ReturnValue.IsEmpty())
+	{
+		ReturnValue = FString::Printf(TEXT("\n%s"), *ReturnValue);
+	}
+
+	return ReturnValue;
+}
+
 TCoroutine<> UDemo_BossState_Patrolling::Label_Default()
 {
 	while (true)
 	{
-		AActor* MovePoint = GetMovePoint();
-
 		// Get to a patrol point
-		RUN_LATENT_EXECUTION(AI::AIMoveTo, Controller.Get(), MovePoint, -1.f, EAIOptionFlag::Disable);
+		MovePoint = GetMovePoint();
+		RUN_LATENT_EXECUTION(AI::AIMoveTo, Controller.Get(), MovePoint.Get(), -1.f, EAIOptionFlag::Disable);
+		MovePoint.Reset();
 
 		// Stay idle for a while
-		RUN_LATENT_EXECUTION(Latent::Seconds, FMath::FRandRange(MinWaitTimeUponMove, MaxWaitTimeUponMove));
+		WaitStartTime = GetTime();
+		WaitTime = FMath::FRandRange(MinWaitTimeUponMove, MaxWaitTimeUponMove);
+		RUN_LATENT_EXECUTION(Latent::Seconds, WaitTime);
 	}
 }
 
