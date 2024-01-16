@@ -108,3 +108,76 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Movement", meta=(ClampMin="0.0"))
 	float MinimumMovePointDistance = 1000.f;
 };
+
+/**
+ * Base class for a stun state containing minimum logic.
+ *
+ * There can be different reasons to subclass this class: one might want to add stun counter for a specific stun type
+ * for some statistics, or a specific stun type might apply some debuff upon deactivation.
+ *
+ * In our case, however, we're subclassing it to have different animations based on stun type, and also to allow
+ * combining multiple stuns together, as pushing a state that is already present on the stack is prohibited, meaning
+ * that the boss cannot be hard stunned while being soft stunned.
+ */
+UCLASS(Abstract)
+class DEMOUE5FSM_API UDemo_BossState_Stun
+	: public UDemo_BossState
+{
+	GENERATED_BODY()
+
+public:
+	UDemo_BossState_Stun();
+
+protected:
+	//~UDemo_BossState Interface
+	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
+	virtual void OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
+	//~End of UDemo_BossState Interface
+
+	//~Labels
+	virtual TCoroutine<> Label_Default() override;
+	//~End of Labels
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category="Stun")
+	TObjectPtr<UAnimMontage> StunAnimation = nullptr;
+};
+
+/**
+ * Stun to apply anytime players lowers boss health up to 0 using their flashlights.
+ */
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_SoftStun
+	: public UDemo_BossState_Stun
+{
+	GENERATED_BODY()
+
+public:
+	// Empty
+};
+
+/**
+ * Stun to apply anytime players do something to progress, as it hurts the boss a lot.
+ */
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_HardStun
+	: public UDemo_BossState_Stun
+{
+	GENERATED_BODY()
+
+public:
+	// Empty
+};
+
+/**
+ * Stun to apply anytime boss transits from Patrolling to Seeking state, as the boss becomes annoyed by the players.
+ */
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_RageStun
+	: public UDemo_BossState_Stun
+{
+	GENERATED_BODY()
+
+public:
+	// Empty
+};

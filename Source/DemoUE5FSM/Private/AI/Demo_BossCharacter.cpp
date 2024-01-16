@@ -8,6 +8,16 @@ ADemo_BossCharacter::ADemo_BossCharacter()
 {
 }
 
+void ADemo_BossCharacter::PlayAnimation_Implementation(UAnimMontage* Animation)
+{
+	PlayAnimMontage(Animation);
+}
+
+bool ADemo_BossCharacter::PlayAnimation_Validate(UAnimMontage* Animation)
+{
+	return true;
+}
+
 void ADemo_BossCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);

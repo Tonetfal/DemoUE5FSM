@@ -18,6 +18,9 @@ class DEMOUE5FSM_API ADemo_BossCharacter
 public:
 	ADemo_BossCharacter();
 
+	UFUNCTION(NetMulticast, Reliable, WithValidation)
+	void PlayAnimation(UAnimMontage* Animation);
+
 protected:
 	//~ACharacter Interface
 	virtual void PossessedBy(AController* NewController) override;

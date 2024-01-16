@@ -115,9 +115,8 @@ AActor* UDemo_BossState_Patrolling::GetMovePoint() const
 
 TCoroutine<> UDemo_BossState_Seeking::Label_Default()
 {
-	// @todo implement rage stun
 	// Push the rage stun; the code after this operation will only take place after we become active
-	// PUSH_STATE(UDemo_BossState_RageStun);
+	PUSH_STATE(UDemo_BossState_RageStun);
 
 	while (true)
 	{
@@ -131,4 +130,56 @@ TCoroutine<> UDemo_BossState_Seeking::Label_Default()
 AActor* UDemo_BossState_Seeking::GetMovePoint() const
 {
 	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailableSeekingTags, MinimumMovePointDistance);
+}
+
+UDemo_BossState_Stun::UDemo_BossState_Stun()
+{
+	// @todo define chasing player state
+	// StatesBlocklist.Add(UDemo_BossState_ChasingPlayer::StaticClass());
+}
+
+void UDemo_BossState_Stun::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
+{
+	Super::OnActivated(StateAction, OldState);
+
+	// Sanity check
+	if (!ensure(IsValid(StunAnimation)))
+	{
+		// If we don't have any animation, we no longer want to be in this state
+		PopState();
+		return;
+	}
+
+	// Disallow attacking the boss while stunned as it's unfair
+	GlobalStateData->bIsInvincible = true;
+
+	// Make sure that there's no other action running while we're stunned
+	StopLatentExecution();
+
+	// Stopping the latent function doesn't prevent MoveTo to abort the movement, so we have to stop it ourselves
+	Controller->StopMovement();
+}
+
+void UDemo_BossState_Stun::OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState)
+{
+	GlobalStateData->bIsInvincible = false;
+
+	Super::OnDeactivated(StateAction, NewState);
+}
+
+TCoroutine<> UDemo_BossState_Stun::Label_Default()
+{
+	// In the article PlayAnimMontage() is used to avoid some uneccessary multiplier complexity, however, in reality
+	// we need to send a multicast RPC to notify all players about the stun state
+	Character->PlayAnimation(StunAnimation);
+
+	// Wait until the stun animation ends
+	const UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	while (AnimInstance->Montage_IsPlaying(StunAnimation))
+	{
+		// Wait until the animation doesn't end
+		RUN_LATENT_EXECUTION(Latent::NextTick);
+	}
+
+	POP_STATE();
 }
