@@ -33,6 +33,9 @@ class DEMOUE5FSM_API UDemo_GlobalBossStateData
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, Category="Movement")
+	FGameplayTagContainer AvailablePatrollingTags;
+
 	bool bIsInvincible = false;
 };
 
@@ -75,6 +78,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category="Seeking Transition", meta=(ClampMin="0.0"))
 	float SeekingTransitionDelay = 10.f;
+
+	/** Minimal distance the move point have to be at in order to consider them valid. */
+	UPROPERTY(EditDefaultsOnly, Category="Movement", meta=(ClampMin="0.0"))
+	float MinimumMovePointDistance = 1000.f;
 
 private:
 	FTimerHandle SeekingTransitionTimer;
