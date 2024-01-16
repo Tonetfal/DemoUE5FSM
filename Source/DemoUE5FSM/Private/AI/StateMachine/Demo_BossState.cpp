@@ -6,8 +6,6 @@
 #include "Gameplay/Demo_TaggedActor.h"
 #include "Gameplay/Demo_TaggedActorsCollection.h"
 
-class ADemo_TaggedActor;
-
 void UDemo_BossState::OnAddedToStack(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
 {
 	Super::OnAddedToStack(StateAction, OldState);
@@ -62,8 +60,7 @@ void UDemo_BossState_Patrolling::DelaySeekingState()
 {
 	GetTimerManager().SetTimer(SeekingTransitionTimer, [this]
 	{
-		// @todo define UDemo_BossState_Seeking
-		// StateMachine->PushState(UDemo_BossState_Seeking::StaticClass());
+		StateMachine->PushState(UDemo_BossState_Seeking::StaticClass());
 	}, SeekingTransitionDelay, false);
 }
 
@@ -103,5 +100,26 @@ AActor* UDemo_BossState_Patrolling::GetMovePoint() const
 		return ValidMovePoints[RandIndex];
 	}
 
+	return nullptr;
+}
+
+TCoroutine<> UDemo_BossState_Seeking::Label_Default()
+{
+	// @todo implement rage stun
+	// Push the rage stun; the code after this operation will only take place after we become active
+	// PUSH_STATE(UDemo_BossState_RageStun);
+
+	while (true)
+	{
+		AActor* MovePoint = GetMovePoint();
+
+		// Get to a point
+		RUN_LATENT_EXECUTION(AI::AIMoveTo, Controller.Get(), MovePoint, -1.f, EAIOptionFlag::Disable);
+	}
+}
+
+AActor* UDemo_BossState_Seeking::GetMovePoint() const
+{
+	// @todo implement
 	return nullptr;
 }

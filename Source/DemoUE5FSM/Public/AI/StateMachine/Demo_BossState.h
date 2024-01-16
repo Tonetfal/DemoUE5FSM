@@ -86,3 +86,17 @@ protected:
 private:
 	FTimerHandle SeekingTransitionTimer;
 };
+
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_Seeking
+	: public UDemo_BossState
+{
+	GENERATED_BODY()
+
+protected:
+	//~Labels
+	virtual TCoroutine<> Label_Default() override;
+	//~End of Labels
+
+	AActor* GetMovePoint() const;
+};
