@@ -6,6 +6,50 @@
 #include "Gameplay/Demo_TaggedActor.h"
 #include "Gameplay/Demo_TaggedActorsCollection.h"
 
+/**
+ * Unify the GetMovePoint() under one single function.
+ * Don't make direct use of the function, but use it inside your own GetMovePoint(), as at some point you might want to
+ * change the implementation of a particular GetMovePoint().
+ */
+static AActor* GetMovePoint_Base(const ACharacter* Character, FGameplayTagContainer Tags, float MinDistance)
+{
+	const auto& TaggedActorsCollection = *Character->GetWorld()->GetSubsystem<UDemo_TaggedActorsCollection>();
+	TArray<ADemo_TaggedActor*> MovePoints = TaggedActorsCollection.QueryActors(
+		Tags, EDemo_GameplayTagQueryType::AnyTagsMatch);
+
+	const int32 TotalNum = MovePoints.Num();
+	if (!ensure(TotalNum > 0))
+	{
+		return nullptr;
+	}
+
+	// Filter out the ones that are too close
+	TArray<ADemo_TaggedActor*> ValidMovePoints;
+	const FVector Origin = Character->GetActorLocation();
+	for (ADemo_TaggedActor* MovePoint : MovePoints)
+	{
+		const FVector MovePointPosition = MovePoint->GetActorLocation();
+		const FVector ToMovePoint = Origin - MovePointPosition;
+		const float DistanceSq = ToMovePoint.SquaredLength();
+		const float MinimumDistanceSq = FMath::Square(MinDistance);
+		if (DistanceSq > MinimumDistanceSq)
+		{
+			ValidMovePoints.Add(MovePoint);
+		}
+	}
+
+	// We might've filter out everything
+	const int32 ValidNum = ValidMovePoints.Num();
+	if (ensureMsgf(ValidNum > 0, TEXT("There's no valid move point at [%s] using [%s] tags."),
+		*Origin.ToString(), *Tags.ToString()))
+	{
+		const int32 RandIndex = FMath::RandRange(0, ValidNum - 1);
+		return ValidMovePoints[RandIndex];
+	}
+
+	return nullptr;
+}
+
 void UDemo_BossState::OnAddedToStack(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
 {
 	Super::OnAddedToStack(StateAction, OldState);
@@ -66,41 +110,7 @@ void UDemo_BossState_Patrolling::DelaySeekingState()
 
 AActor* UDemo_BossState_Patrolling::GetMovePoint() const
 {
-	const auto& TaggedActorsCollection = *GetWorld()->GetSubsystem<UDemo_TaggedActorsCollection>();
-	TArray<ADemo_TaggedActor*> MovePoints = TaggedActorsCollection.QueryActors(
-		GlobalStateData->AvailablePatrollingTags, EDemo_GameplayTagQueryType::AnyTagsMatch);
-
-	const int32 TotalNum = MovePoints.Num();
-	if (!ensure(TotalNum > 0))
-	{
-		return nullptr;
-	}
-
-	// Filter out the ones that are too close
-	TArray<ADemo_TaggedActor*> ValidMovePoints;
-	const FVector Origin = Character->GetActorLocation();
-	for (ADemo_TaggedActor* MovePoint : MovePoints)
-	{
-		const FVector MovePointPosition = MovePoint->GetActorLocation();
-		const FVector ToMovePoint = Origin - MovePointPosition;
-		const float DistanceSq = ToMovePoint.SquaredLength();
-		const float MinimumDistanceSq = FMath::Square(MinimumMovePointDistance);
-		if (DistanceSq > MinimumDistanceSq)
-		{
-			ValidMovePoints.Add(MovePoint);
-		}
-	}
-
-	// We might've filter out everything
-	const int32 ValidNum = ValidMovePoints.Num();
-	if (ensureMsgf(ValidNum > 0, TEXT("There's no valid move point at [%s] using [%s] tags."),
-		*Origin.ToString(), *GlobalStateData->AvailablePatrollingTags.ToString()))
-	{
-		const int32 RandIndex = FMath::RandRange(0, ValidNum - 1);
-		return ValidMovePoints[RandIndex];
-	}
-
-	return nullptr;
+	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailablePatrollingTags, MinimumMovePointDistance);
 }
 
 TCoroutine<> UDemo_BossState_Seeking::Label_Default()
@@ -120,6 +130,5 @@ TCoroutine<> UDemo_BossState_Seeking::Label_Default()
 
 AActor* UDemo_BossState_Seeking::GetMovePoint() const
 {
-	// @todo implement
-	return nullptr;
+	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailableSeekingTags, MinimumMovePointDistance);
 }

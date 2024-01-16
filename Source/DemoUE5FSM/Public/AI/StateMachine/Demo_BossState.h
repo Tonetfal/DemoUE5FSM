@@ -36,6 +36,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category="Movement")
 	FGameplayTagContainer AvailablePatrollingTags;
 
+	UPROPERTY(EditDefaultsOnly, Category="Movement")
+	FGameplayTagContainer AvailableSeekingTags;
+
 	bool bIsInvincible = false;
 };
 
@@ -99,4 +102,9 @@ protected:
 	//~End of Labels
 
 	AActor* GetMovePoint() const;
+
+protected:
+	/** Minimal distance the move point have to be at in order to consider them valid. */
+	UPROPERTY(EditDefaultsOnly, Category="Movement", meta=(ClampMin="0.0"))
+	float MinimumMovePointDistance = 1000.f;
 };
