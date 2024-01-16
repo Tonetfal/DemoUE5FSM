@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "FiniteStateMachine/FiniteStateMachine.h"
 #include "FiniteStateMachine/MachineState.h"
 #include "FiniteStateMachine/MachineStateData.h"
 
@@ -7,6 +8,7 @@
 
 class ADemo_BossCharacter;
 class ADemo_BossController;
+struct FAIStimulus;
 
 UCLASS(Abstract)
 class DEMOUE5FSM_API UDemo_BossState
@@ -33,14 +35,21 @@ class DEMOUE5FSM_API UDemo_GlobalBossStateData
 	GENERATED_BODY()
 
 public:
+	void SetTargetActor(AActor* InTarget);
+	void SetTargetLocation(FVector InLocation);
+
+public:
 	UPROPERTY(EditDefaultsOnly, Category="Movement")
 	FGameplayTagContainer AvailablePatrollingTags;
 
 	UPROPERTY(EditDefaultsOnly, Category="Movement")
 	FGameplayTagContainer AvailableSeekingTags;
 
+	TWeakObjectPtr<AActor> TargetActor = nullptr;
 	FVector TargetPosition = FVector::ZeroVector;
 	bool bIsInvincible = false;
+
+	TArray<TWeakObjectPtr<AActor>> SeenActors;
 };
 
 UCLASS()
@@ -50,8 +59,21 @@ class DEMOUE5FSM_API UDemo_BossState_Global
 {
 	GENERATED_BODY()
 
-public:
-	// Empty for now
+protected:
+	//~UDemo_BossState Interface
+	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
+	virtual void Tick(float DeltaSeconds) override;
+	//~End of UDemo_BossState Interface
+
+	private:
+	UFUNCTION()
+	void OnActorPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
+	AActor* GetClosestActor() const;
+	void TryToPushChasingPlayerState();
+
+private:
+	FFSM_PushRequestHandle PushRequestHandle;
 };
 
 UCLASS()
@@ -191,9 +213,15 @@ class DEMOUE5FSM_API UDemo_BossState_ChasingPlayer
 
 protected:
 	//~UDemo_BossState_Patrolling Interface
+	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
+	virtual void OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
 	virtual void Tick(float DeltaSeconds) override;
 	//~End of UDemo_BossState_Patrolling Interface
 
-	private:
+private:
+	UFUNCTION()
+	void OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result);
+
+private:
 	FVector LastTargetPosition = FVector::ZeroVector;
 };

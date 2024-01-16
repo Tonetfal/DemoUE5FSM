@@ -5,6 +5,9 @@
 #include "FiniteStateMachine/FiniteStateMachine.h"
 #include "Gameplay/Demo_TaggedActor.h"
 #include "Gameplay/Demo_TaggedActorsCollection.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISense_Sight.h"
+#include "Senses/AISensePredictionPlus.h"
 
 /**
  * Unify the GetMovePoint() under one single function.
@@ -68,6 +71,95 @@ void UDemo_BossState::OnRemovedFromStack(EStateAction StateAction, TSubclassOf<U
 	GlobalStateData.Reset();
 
 	Super::OnRemovedFromStack(StateAction, NewState);
+}
+void UDemo_GlobalBossStateData::SetTargetActor(AActor* InTarget)
+{
+	TargetActor = InTarget;
+
+	if (TargetActor.IsValid())
+	{
+		TargetPosition = TargetActor->GetActorLocation();
+	}
+}
+
+void UDemo_GlobalBossStateData::SetTargetLocation(FVector InLocation)
+{
+	TargetActor.Reset();
+	TargetPosition = InLocation;
+}
+
+void UDemo_BossState_Global::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
+{
+	Super::OnActivated(StateAction, OldState);
+
+	UAIPerceptionComponent* PerceptionComponent = Controller->GetPerceptionComponent();
+	check(IsValid(PerceptionComponent));
+
+	PerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ThisClass::OnActorPerceptionUpdated);
+}
+
+void UDemo_BossState_Global::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	AActor* ClosestActor = GetClosestActor();
+	if (IsValid(ClosestActor))
+	{
+		GlobalStateData->SetTargetActor(ClosestActor);
+	}
+}
+
+void UDemo_BossState_Global::OnActorPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+{
+	const TSubclassOf<UAISense> PerceptionClass = UAIPerceptionSystem::GetSenseClassForStimulus(this, Stimulus);
+	if (UAISense_Sight::StaticClass() == PerceptionClass)
+	{
+		if (Stimulus.WasSuccessfullySensed())
+		{
+			GlobalStateData->SeenActors.AddUnique(Actor);
+			TryToPushChasingPlayerState();
+		}
+		else
+		{
+			GlobalStateData->SeenActors.RemoveSingle(Actor);
+			UAISense_PredictionPlus::RequestPawnPredictionPlusEvent(Character.Get(), Actor, 1.f);
+		}
+	}
+	else if (UAISense_PredictionPlus::StaticClass() == PerceptionClass)
+	{
+		GlobalStateData->SetTargetLocation(Stimulus.StimulusLocation);
+		TryToPushChasingPlayerState();
+	}
+}
+
+AActor* UDemo_BossState_Global::GetClosestActor() const
+{
+	AActor* Winner = nullptr;
+	float ClosestDistanceSq = FLT_MAX;
+	const FVector OurPosition = Character->GetActorLocation();
+
+	for (const TWeakObjectPtr<AActor> Actor : GlobalStateData->SeenActors)
+	{
+		const FVector TargetPosition = Actor->GetActorLocation();
+		const FVector ToTarget = OurPosition - TargetPosition;
+		const float DistanceSq = ToTarget.SquaredLength();
+		if (ClosestDistanceSq > DistanceSq)
+		{
+			Winner = Actor.Get();
+			ClosestDistanceSq = DistanceSq;
+		}
+	}
+
+	return Winner;
+}
+
+void UDemo_BossState_Global::TryToPushChasingPlayerState()
+{
+	if (!StateMachine->IsInState(UDemo_BossState_ChasingPlayer::StaticClass(), true) && !PushRequestHandle.IsPending())
+	{
+		StateMachine->PushStateQueued(
+			PushRequestHandle, UDemo_BossState_ChasingPlayer::StaticClass(), TAG_StateMachine_Label_Default);
+	}
 }
 
 void UDemo_BossState_Patrolling::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
@@ -134,8 +226,7 @@ AActor* UDemo_BossState_Seeking::GetMovePoint() const
 
 UDemo_BossState_Stun::UDemo_BossState_Stun()
 {
-	// @todo define chasing player state
-	// StatesBlocklist.Add(UDemo_BossState_ChasingPlayer::StaticClass());
+	StatesBlocklist.Add(UDemo_BossState_ChasingPlayer::StaticClass());
 }
 
 void UDemo_BossState_Stun::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
@@ -184,6 +275,20 @@ TCoroutine<> UDemo_BossState_Stun::Label_Default()
 	POP_STATE();
 }
 
+void UDemo_BossState_ChasingPlayer::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
+{
+	Super::OnActivated(StateAction, OldState);
+
+	Controller->ReceiveMoveCompleted.AddDynamic(this, &ThisClass::OnMoveCompleted);
+}
+
+void UDemo_BossState_ChasingPlayer::OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState)
+{
+	Controller->ReceiveMoveCompleted.RemoveDynamic(this, &ThisClass::OnMoveCompleted);
+
+	Super::OnDeactivated(StateAction, NewState);
+}
+
 void UDemo_BossState_ChasingPlayer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -193,5 +298,13 @@ void UDemo_BossState_ChasingPlayer::Tick(float DeltaSeconds)
 	{
 		Controller->MoveToLocation(GlobalStateData->TargetPosition, -1.f, false);
 		LastTargetPosition = GlobalStateData->TargetPosition;
+	}
+}
+
+void UDemo_BossState_ChasingPlayer::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)
+{
+	if (Result == EPathFollowingResult::Success || Result == EPathFollowingResult::Blocked)
+	{
+		PopState();
 	}
 }

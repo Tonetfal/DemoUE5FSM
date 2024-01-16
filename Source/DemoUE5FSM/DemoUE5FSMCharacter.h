@@ -7,6 +7,7 @@
 #include "Logging/LogMacros.h"
 #include "DemoUE5FSMCharacter.generated.h"
 
+class UAIPerceptionStimuliSourceComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -27,7 +28,7 @@ class ADemoUE5FSMCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
-	
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
@@ -44,9 +45,13 @@ class ADemoUE5FSMCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess))
+	TObjectPtr<UAIPerceptionStimuliSourceComponent> StimuliSourceComponent = nullptr;
+
 public:
 	ADemoUE5FSMCharacter();
-	
+
+	void SetStimuliEnabled(bool bIsEnabled);
 
 protected:
 
@@ -55,12 +60,12 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-			
+
 
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+
 	// To add mapping context
 	virtual void BeginPlay();
 
