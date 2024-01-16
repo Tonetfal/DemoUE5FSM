@@ -29,3 +29,16 @@ void ADemo_BossController::OnPossess(APawn* InPawn)
 	GlobalState = StateMachine->GetStateChecked<UDemo_BossState_Global>();
 	GlobalStateData = StateMachine->GetStateDataChecked<UDemo_GlobalBossStateData, UDemo_BossState_Global>();
 }
+
+void ADemo_BossController::OnProgression()
+{
+	StateMachine->PushState(UDemo_BossState_HardStun::StaticClass());
+}
+
+void ADemo_BossController::OnFlashlight()
+{
+	if (!GlobalStateData->bIsInvincible)
+	{
+		StateMachine->PushState(UDemo_BossState_SoftStun::StaticClass());
+	}
+}

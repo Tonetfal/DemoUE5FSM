@@ -54,6 +54,32 @@ static AActor* GetMovePoint_Base(const ACharacter* Character, FGameplayTagContai
 	return nullptr;
 }
 
+void UDemo_BossState::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
+{
+	Super::OnActivated(StateAction, OldState);
+
+	if (bStunRestartsAI && IsValid(OldState))
+	{
+		// Filter out stun classes that we don't want to be restarted by
+		if (StunBlocklist.ContainsByPredicate([OldState] (TSubclassOf<UDemo_BossState_Stun>)
+			{
+				return OldState->IsChildOf(UDemo_BossState_Stun::StaticClass());
+			}))
+		{
+			return;
+		}
+
+		if (OldState->IsChildOf(UDemo_BossState_Stun::StaticClass()))
+		{
+			// Don't run any label as we're about to reset the AI
+			GotoLabel(FGameplayTag::EmptyTag);
+
+			// Restart the AI upon being stunned
+			GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this] { RestartAI(); }));
+		}
+	}
+}
+
 void UDemo_BossState::OnAddedToStack(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
 {
 	Super::OnAddedToStack(StateAction, OldState);
@@ -73,6 +99,25 @@ void UDemo_BossState::OnRemovedFromStack(EStateAction StateAction, TSubclassOf<U
 
 	Super::OnRemovedFromStack(StateAction, NewState);
 }
+
+void UDemo_BossState::RestartAI()
+{
+	// Make sure that there's no other action running while we're stunned
+	StopLatentExecution();
+
+	// Stopping the latent function doesn't prevent MoveTo to abort the movement, so we have to stop it ourselves
+	Controller->StopMovement();
+
+	// Release the player
+	Character->SetGrabbedPlayer(nullptr);
+
+	// Remove any current state
+	ClearStack();
+
+	// Start off by patrolling
+	GotoState(UDemo_BossState_Patrolling::StaticClass());
+}
+
 void UDemo_GlobalBossStateData::SetTargetActor(AActor* InTarget)
 {
 	TargetActor = InTarget;
@@ -343,14 +388,6 @@ void UDemo_BossState_CarryingPlayer::OnActivated(EStateAction StateAction, TSubc
 {
 	Super::OnActivated(StateAction, OldState);
 
-	// Sanity check
-	const ADemoUE5FSMCharacter* GrabbedPlayer = Character->GetGrabbedPlayer();
-	if (!ensure(IsValid(GrabbedPlayer)))
-	{
-		PopState();
-		return;
-	}
-
 	// Make sure that there's no running MoveTo
 	Controller->StopMovement();
 }
@@ -363,12 +400,7 @@ TCoroutine<> UDemo_BossState_CarryingPlayer::Label_Default()
 	// Ignore the player for some time
 	Character->GetGrabbedPlayer()->TemporarilyUnregisterAsStimuliSource(5.f);
 
-	// Release the player
-	Character->SetGrabbedPlayer(nullptr);
-
-	// Restart AI
-	ClearStack();
-	PushState(UDemo_BossState_Patrolling::StaticClass());
+	RestartAI();
 }
 
 AActor* UDemo_BossState_CarryingPlayer::GetMovePoint() const

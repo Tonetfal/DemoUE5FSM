@@ -18,14 +18,23 @@ class DEMOUE5FSM_API UDemo_BossState
 
 protected:
 	//~UMachineState Interface
+	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
 	virtual void OnAddedToStack(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
 	virtual void OnRemovedFromStack(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
 	//~End of UMachineState Interface
+
+	void RestartAI();
 
 protected:
 	TWeakObjectPtr<ADemo_BossController> Controller = nullptr;
 	TWeakObjectPtr<ADemo_BossCharacter> Character = nullptr;
 	TWeakObjectPtr<class UDemo_GlobalBossStateData> GlobalStateData = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category="Stun")
+	bool bStunRestartsAI = false;
+
+	UPROPERTY(EditDefaultsOnly, Category="Stun")
+	TArray<TSubclassOf<class UDemo_BossState_Stun>> StunBlocklist;
 };
 
 UCLASS()

@@ -24,7 +24,13 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	//~End of AAIController Interface
 
-	protected:
+	UFUNCTION()
+	void OnProgression();
+
+	UFUNCTION()
+	void OnFlashlight();
+
+protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="AI")
 	TObjectPtr<UFiniteStateMachine> StateMachine = nullptr;
 
