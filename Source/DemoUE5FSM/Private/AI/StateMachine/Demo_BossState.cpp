@@ -183,3 +183,15 @@ TCoroutine<> UDemo_BossState_Stun::Label_Default()
 
 	POP_STATE();
 }
+
+void UDemo_BossState_ChasingPlayer::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Don't make a new MoveTo request unless the target position has changed
+	if (GlobalStateData->TargetPosition != LastTargetPosition)
+	{
+		Controller->MoveToLocation(GlobalStateData->TargetPosition, -1.f, false);
+		LastTargetPosition = GlobalStateData->TargetPosition;
+	}
+}

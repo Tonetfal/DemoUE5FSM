@@ -39,6 +39,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category="Movement")
 	FGameplayTagContainer AvailableSeekingTags;
 
+	FVector TargetPosition = FVector::ZeroVector;
 	bool bIsInvincible = false;
 };
 
@@ -180,4 +181,19 @@ class DEMOUE5FSM_API UDemo_BossState_RageStun
 
 public:
 	// Empty
+};
+
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_ChasingPlayer
+	: public UDemo_BossState
+{
+	GENERATED_BODY()
+
+protected:
+	//~UDemo_BossState_Patrolling Interface
+	virtual void Tick(float DeltaSeconds) override;
+	//~End of UDemo_BossState_Patrolling Interface
+
+	private:
+	FVector LastTargetPosition = FVector::ZeroVector;
 };
