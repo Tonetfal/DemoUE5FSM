@@ -78,6 +78,15 @@ void ADemoUE5FSMCharacter::SetStimuliEnabled(bool bIsEnabled)
 	}
 }
 
+void ADemoUE5FSMCharacter::TemporarilyUnregisterAsStimuliSource(float Seconds)
+{
+	SetStimuliEnabled(false);
+
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle,
+		FTimerDelegate::CreateUObject(this, &ThisClass::SetStimuliEnabled, true), Seconds, false);
+}
+
 void ADemoUE5FSMCharacter::BeginPlay()
 {
 	// Call the base class

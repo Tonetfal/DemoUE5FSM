@@ -40,10 +40,13 @@ public:
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Movement")
-	FGameplayTagContainer AvailablePatrollingTags;
+	FGameplayTagContainer AvailablePatrollingMovePointTags;
 
 	UPROPERTY(EditDefaultsOnly, Category="Movement")
-	FGameplayTagContainer AvailableSeekingTags;
+	FGameplayTagContainer AvailableSeekingMovePointTags;
+
+	UPROPERTY(EditDefaultsOnly, Category="Movement")
+	FGameplayTagContainer AvailableKillMovePointTags;
 
 	TWeakObjectPtr<AActor> TargetActor = nullptr;
 	FVector TargetPosition = FVector::ZeroVector;
@@ -213,7 +216,9 @@ class DEMOUE5FSM_API UDemo_BossState_ChasingPlayer
 
 protected:
 	//~UDemo_BossState_Patrolling Interface
+	virtual void OnAddedToStack(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
 	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
+	virtual void OnRemovedFromStack(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
 	virtual void OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
 	virtual void Tick(float DeltaSeconds) override;
 	//~End of UDemo_BossState_Patrolling Interface
@@ -224,4 +229,31 @@ private:
 
 private:
 	FVector LastTargetPosition = FVector::ZeroVector;
+	FDelegateHandle OnPlayerGrabbedDelegateHandle;
+};
+
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_CarryingPlayer
+	: public UDemo_BossState
+{
+	GENERATED_BODY()
+
+public:
+	UDemo_BossState_CarryingPlayer();
+
+protected:
+	//~UDemo_BossState Interface
+	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
+	//~End of UDemo_BossState Interface
+
+	//~Labels
+	virtual TCoroutine<> Label_Default() override;
+	//~End of Labels
+
+	AActor* GetMovePoint() const;
+
+protected:
+	/** Minimal distance the move point have to be at in order to consider them valid. */
+	UPROPERTY(EditDefaultsOnly, Category="Movement", meta=(ClampMin="0.0"))
+	float MinimumMovePointDistance = 1000.f;
 };

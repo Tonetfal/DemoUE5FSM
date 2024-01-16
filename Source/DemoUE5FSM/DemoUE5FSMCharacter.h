@@ -52,6 +52,7 @@ public:
 	ADemoUE5FSMCharacter();
 
 	void SetStimuliEnabled(bool bIsEnabled);
+	void TemporarilyUnregisterAsStimuliSource(float Seconds);
 
 protected:
 

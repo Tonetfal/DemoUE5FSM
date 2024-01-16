@@ -2,6 +2,7 @@
 
 #include "AI/Demo_BossCharacter.h"
 #include "AI/Demo_BossController.h"
+#include "DemoUE5FSM/DemoUE5FSMCharacter.h"
 #include "FiniteStateMachine/FiniteStateMachine.h"
 #include "Gameplay/Demo_TaggedActor.h"
 #include "Gameplay/Demo_TaggedActorsCollection.h"
@@ -202,7 +203,7 @@ void UDemo_BossState_Patrolling::DelaySeekingState()
 
 AActor* UDemo_BossState_Patrolling::GetMovePoint() const
 {
-	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailablePatrollingTags, MinimumMovePointDistance);
+	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailablePatrollingMovePointTags, MinimumMovePointDistance);
 }
 
 TCoroutine<> UDemo_BossState_Seeking::Label_Default()
@@ -221,7 +222,7 @@ TCoroutine<> UDemo_BossState_Seeking::Label_Default()
 
 AActor* UDemo_BossState_Seeking::GetMovePoint() const
 {
-	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailableSeekingTags, MinimumMovePointDistance);
+	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailableSeekingMovePointTags, MinimumMovePointDistance);
 }
 
 UDemo_BossState_Stun::UDemo_BossState_Stun()
@@ -249,6 +250,9 @@ void UDemo_BossState_Stun::OnActivated(EStateAction StateAction, TSubclassOf<UMa
 
 	// Stopping the latent function doesn't prevent MoveTo to abort the movement, so we have to stop it ourselves
 	Controller->StopMovement();
+
+	// Release the player
+	Character->SetGrabbedPlayer(nullptr);
 }
 
 void UDemo_BossState_Stun::OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState)
@@ -275,11 +279,32 @@ TCoroutine<> UDemo_BossState_Stun::Label_Default()
 	POP_STATE();
 }
 
+void UDemo_BossState_ChasingPlayer::OnAddedToStack(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
+{
+	Super::OnAddedToStack(StateAction, OldState);
+
+	OnPlayerGrabbedDelegateHandle = Character->OnPlayerGrabbed.AddLambda([this]
+	{
+		GotoState(UDemo_BossState_CarryingPlayer::StaticClass());
+	});
+
+	// Allow grabbing player. Do not allow that when resuming the state, as it might accidentally grab another
+	// player that's standing in front of us
+	Character->SetGrabCollisionEnabled(true);
+}
+
 void UDemo_BossState_ChasingPlayer::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
 {
 	Super::OnActivated(StateAction, OldState);
 
 	Controller->ReceiveMoveCompleted.AddDynamic(this, &ThisClass::OnMoveCompleted);
+}
+
+void UDemo_BossState_ChasingPlayer::OnRemovedFromStack(EStateAction StateAction, TSubclassOf<UMachineState> NewState)
+{
+	Character->OnPlayerGrabbed.Remove(OnPlayerGrabbedDelegateHandle);
+
+	Super::OnRemovedFromStack(StateAction, NewState);
 }
 
 void UDemo_BossState_ChasingPlayer::OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState)
@@ -307,4 +332,46 @@ void UDemo_BossState_ChasingPlayer::OnMoveCompleted(FAIRequestID RequestID, EPat
 	{
 		PopState();
 	}
+}
+
+UDemo_BossState_CarryingPlayer::UDemo_BossState_CarryingPlayer()
+{
+	StatesBlocklist.Add(UDemo_BossState_ChasingPlayer::StaticClass());
+}
+
+void UDemo_BossState_CarryingPlayer::OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState)
+{
+	Super::OnActivated(StateAction, OldState);
+
+	// Sanity check
+	const ADemoUE5FSMCharacter* GrabbedPlayer = Character->GetGrabbedPlayer();
+	if (!ensure(IsValid(GrabbedPlayer)))
+	{
+		PopState();
+		return;
+	}
+
+	// Make sure that there's no running MoveTo
+	Controller->StopMovement();
+}
+
+TCoroutine<> UDemo_BossState_CarryingPlayer::Label_Default()
+{
+	AActor* MovePoint = GetMovePoint();
+	RUN_LATENT_EXECUTION(AI::AIMoveTo, Controller.Get(), MovePoint);
+
+	// Ignore the player for some time
+	Character->GetGrabbedPlayer()->TemporarilyUnregisterAsStimuliSource(5.f);
+
+	// Release the player
+	Character->SetGrabbedPlayer(nullptr);
+
+	// Restart AI
+	ClearStack();
+	PushState(UDemo_BossState_Patrolling::StaticClass());
+}
+
+AActor* UDemo_BossState_CarryingPlayer::GetMovePoint() const
+{
+	return GetMovePoint_Base(Character.Get(), GlobalStateData->AvailableKillMovePointTags, MinimumMovePointDistance);
 }
