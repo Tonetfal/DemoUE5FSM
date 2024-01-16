@@ -29,6 +29,10 @@
 		{
 			"Name": "UE5CoroAI",
 			"Enabled": true
+		},
+		{
+			"Name": "PredictionSensePlus",
+			"Enabled": true
 		}
 	]
 }

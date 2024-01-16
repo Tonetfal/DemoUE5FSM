@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Perception Sense+",
+	"Description": "Improved AI prediction sense",
+	"Category": "AI",
+	"CreatedBy": "Tonetfal",
+	"CreatedByURL": "https://github.com/Tonetfal",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "PredictionSensePlus",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}

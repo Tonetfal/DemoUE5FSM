@@ -17,6 +17,7 @@ public class DemoUE5FSM : ModuleRules
 				"EnhancedInput" ,
 				"GameplayTags",
 				"InputCore",
+				"PredictionSensePlus",
 				"UE5Coro",
 				"UE5CoroAI",
 				"UE5FSM",
