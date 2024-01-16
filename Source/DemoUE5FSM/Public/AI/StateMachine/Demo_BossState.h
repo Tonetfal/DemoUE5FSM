@@ -46,3 +46,36 @@ class DEMOUE5FSM_API UDemo_BossState_Global
 public:
 	// Empty for now
 };
+
+UCLASS()
+class DEMOUE5FSM_API UDemo_BossState_Patrolling
+	: public UDemo_BossState
+{
+	GENERATED_BODY()
+
+protected:
+	//~UDemo_BossState Interface
+	virtual void OnActivated(EStateAction StateAction, TSubclassOf<UMachineState> OldState) override;
+	virtual void OnDeactivated(EStateAction StateAction, TSubclassOf<UMachineState> NewState) override;
+	//~End of UDemo_BossState Interface
+
+	//~Labels
+	virtual TCoroutine<> Label_Default() override;
+	//~End of Labels
+
+	void DelaySeekingState();
+	AActor* GetMovePoint() const;
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category="Movement", meta=(ClampMin="0.0"))
+	float MinWaitTimeUponMove = 1.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Movement", meta=(ClampMin="0.0"))
+	float MaxWaitTimeUponMove = 3.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Seeking Transition", meta=(ClampMin="0.0"))
+	float SeekingTransitionDelay = 10.f;
+
+private:
+	FTimerHandle SeekingTransitionTimer;
+};
