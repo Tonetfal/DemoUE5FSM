@@ -6,6 +6,8 @@
 
 #include "Demo_BossState.generated.h"
 
+using namespace UE5Coro;
+
 class ADemo_BossCharacter;
 class ADemo_BossController;
 struct FAIStimulus;
